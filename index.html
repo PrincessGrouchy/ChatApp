@@ -3,6 +3,7 @@
 
 <head>
     <title>Socket.IO chat</title>
+    <!-- <link href="style.css" rel="stylesheet" type="text/css" /> -->
     <style>
         * {
             margin: 0;
@@ -51,10 +52,6 @@
         }
 
     </style>
-    <!-- <script src="/socket.io/socket.io.js"></script>
-    <script>
-      var socket = io();
-    </script> -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script>
@@ -66,6 +63,14 @@
                 $('#m').val('');
                 return false;
             });
+            socket.on('username', function (msg) {
+                console.log("hello"); //not printing?
+                $('#usernameClass').append($('<span>').text(msg));
+                // var name = document.createElement("p");
+                // name.innerHTML = text(msg);
+                // $('#usernameClass').append(name);
+                // return;
+            });
             socket.on('chat message', function (msg) {
                 $('#messages').append($('<li>').text(msg));
             });
@@ -74,6 +79,7 @@
 </head>
 
 <body>
+    <p id="usernameClass">Username:<!-- <span id="usernameClass">No Username</span> --></p>
     <ul id="messages"></ul>
     <form action="">
         <input id="m" autocomplete="off" /><button>Send</button>
