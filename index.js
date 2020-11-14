@@ -27,15 +27,16 @@ io.on('connection', (socket) => {
             .split('=')[1];
     }
     //console.log("sessionUsername:" + sessionUsername);
-    if (!sessionUsername) { //if couldn't find cookie 
-       //generate random initial username if no cookie
+    if (!sessionUsername || inUseUsernames.includes(sessionUsername)) { //if couldn't find cookie 
+        //generate random initial username if no cookie
         sessionUsername = usernames[Math.floor(Math.random() * usernames.length)];
         while (inUseUsernames.includes(sessionUsername)) {
+            sessionUsername = usernames[Math.floor(Math.random() * usernames.length)];
             if (inUseUsernames.length >= usernames.length) {
                 sessionUsername += "oh no";
-                break;
+                var tooManyUsersMessage = new Date().toUTCString() + ' | System: Many concurrent users. Expect naming errors.: ';
+                chatHistory.push(tooManyUsersMessage);
             }
-            sessionUsername = usernames[Math.floor(Math.random() * usernames.length)];
         }
     }
 
@@ -95,8 +96,9 @@ io.on('connection', (socket) => {
             var requestedColor = msg.replace("/color ", "");
             console.log('color request:' + requestedColor);
             var systemMessage = "";
-            if (requestedColor >= 255255255 || requestedColor <= 0 || !Number.isInteger(parseInt(requestedColor))) {
-                systemMessage = " | System: Command rejected. Requested color out of range/not a number.";
+            //if (requestedColor >= 255255255 || requestedColor <= 0 || !Number.isInteger(parseInt(requestedColor))) {
+            if (requestedColor.length != 6) {
+                systemMessage = " | System: Command rejected. Requested color out of range(000000 - ffffff).";
                 //why isn't nan working
             } else {
                 systemMessage = " | System: Command accepted. Message color changed.";
@@ -104,7 +106,7 @@ io.on('connection', (socket) => {
                 if (colorIndex > -1) {
                     userColors.splice(colorIndex, 1);
                 }
-                var newColorObject = { colorName: sessionUsername, color: parseInt(requestedColor) };
+                var newColorObject = { colorName: sessionUsername, color: requestedColor };
                 userColors.push(newColorObject);
                 io.emit('userColors', userColors);
             }

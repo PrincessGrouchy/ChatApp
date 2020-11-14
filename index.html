@@ -38,14 +38,38 @@
             socket.on('chat history', function (msg) {
                 $('#messages').empty();
                 for (x of msg) {
-                    $('#messages').prepend($('<li>').text(x));
+                    var currentName = document.getElementById("usernameClass").innerHTML;
+                    var rawColorList = document.getElementById("currentColors").innerHTML;
+                    var colorHTML = "";
+
+
+                    var colorListArray = rawColorList.split("</p>");
+                    // for (row of colorListArray) {
+                    //     var rowMod = row.replace("<p>", "");
+                    //     var maybeColorName = rowMod.slice(0, rowMod.indexOf("|"));
+                    //     var searchString = "GMT | " + maybeColorName;
+                    //     if (x.includes(searchString)) {
+                    //         //alert(maybeColorName);
+                    //         var maybeColorValue = rowMod.slice(rowMod.indexOf("|"));
+                    //         colorHTML = " style=\"color:#" + maybeColorValue + ";";
+                    //     }
+                    // }
+                    // .find(row => row.startsWith('cookieUsername'));
+                    //<p>hello67</p><p>hello78</p>
+                    if (x.includes("GMT | " + currentName)) {
+                        $('#messages').prepend("<li class=bold" + colorHTML + ">" + x + "</li>");
+                    } else {
+                        $('#messages').prepend($('<li>').text(x));
+                        //$('#messages').prepend("<li" + colorHTML + ">" + x + "</li>");
+                    }
                 }
             });
             socket.on('userColors', function (msg) {
+                //shouldn't need to redraw, messages gets called after anyways
                 $('#currentColors').empty();
                 for (x of msg) {
-                    $('#currentColors').append($('<dt>').text(x.colorName));
-                    $('#currentColors').append($('<dd>').text("- " + x.color));
+                    $('#currentColors').append('<p>' + x.colorName + "|" + x.color + "</p>");
+                    // $('#currentColors').append($('<dd>').text("- " + x.color));
 
                 }
             });
@@ -69,7 +93,8 @@
                 <ul id="currentUsers"> no users?</ul>
             </div>
             <div>Current Colors:
-                <dl id="currentColors"> No colors</dl>
+                <!-- <dl id="currentColors"> No colors</dl> -->
+                <p id="currentColors"> No colors</p>
             </div>
         </div>
 
