@@ -35,7 +35,7 @@ io.on('connection', (socket) => {
             if (inUseUsernames.length >= usernames.length) {
                 sessionUsername += "oh no";
                 var tooManyUsersMessage = new Date().toUTCString() + ' | System: Many concurrent users. Expect naming errors.: ';
-                chatHistory.push(tooManyUsersMessage);
+                chatHistory.unshift(tooManyUsersMessage);
             }
         }
     }
@@ -47,10 +47,12 @@ io.on('connection', (socket) => {
     var connectMessage = new Date().toUTCString() + ' | System: User connected: ' + sessionUsername;
     console.log(connectMessage);
     //io.emit('chat message', connectMessage);
+    chatHistory.unshift(connectMessage);
+
     io.emit('users', inUseUsernames);
-    chatHistory.push(connectMessage);
-    io.emit('chat history', chatHistory);
     io.emit('userColors', userColors);
+    io.emit('chat history', chatHistory);
+   
 
 
     socket.on('chat message', (msg) => {
@@ -125,9 +127,9 @@ io.on('connection', (socket) => {
 
         console.log("final message emitted:" + messageToWrite);
         //io.emit('chat message', newMessage);
-        chatHistory.push(messageToWrite);
+        chatHistory.unshift(messageToWrite);
         if (systemMessage) {
-            chatHistory.push(new Date().toUTCString() + systemMessage);
+            chatHistory.unshift(new Date().toUTCString() + systemMessage);
         }
         io.emit('chat history', chatHistory);
     });
@@ -136,7 +138,7 @@ io.on('connection', (socket) => {
         console.log('user disconnected:' + sessionUsername);
         var disconnectMessage = new Date().toUTCString() + ' | System:  User disconnected: ' + sessionUsername;
         //io.emit('chat message', newMessage);
-        chatHistory.push(disconnectMessage);
+        chatHistory.unshift(disconnectMessage);
         io.emit('chat history', chatHistory);
 
         //removing user from active users

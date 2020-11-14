@@ -44,23 +44,33 @@
 
 
                     var colorListArray = rawColorList.split("</p>");
-                    // for (row of colorListArray) {
-                    //     var rowMod = row.replace("<p>", "");
-                    //     var maybeColorName = rowMod.slice(0, rowMod.indexOf("|"));
-                    //     var searchString = "GMT | " + maybeColorName;
-                    //     if (x.includes(searchString)) {
-                    //         //alert(maybeColorName);
-                    //         var maybeColorValue = rowMod.slice(rowMod.indexOf("|"));
-                    //         colorHTML = " style=\"color:#" + maybeColorValue + ";";
-                    //     }
-                    // }
-                    // .find(row => row.startsWith('cookieUsername'));
-                    //<p>hello67</p><p>hello78</p>
+                    for (row of colorListArray) {
+                        var rowMod = row.replace("<p>", "");
+                        var maybeColorName = rowMod.slice(0, rowMod.indexOf("|"));
+                        var searchString = "GMT | " + maybeColorName;
+                        if (x.includes(searchString) && maybeColorName) {
+                            var maybeColorValue = rowMod.slice(rowMod.indexOf("|") + 1);
+                            colorHTML = " style=\"color:#" + maybeColorValue + "\"";
+                            //alert(colorHTML);
+                        }
+                    }
+
+                    var timestamp = x.slice(0, x.indexOf("|") + 1);
+                    var usernamePos = x.split(":", 3).join(":").length;
+                    var username = x.slice(x.indexOf("|") + 1, usernamePos);
+                    // var username = x.slice(x.indexOf("|") + 1, x.indexOf("|"));
+                    var slicedMessage = x.slice(usernamePos);
+
                     if (x.includes("GMT | " + currentName)) {
-                        $('#messages').prepend("<li class=bold" + colorHTML + ">" + x + "</li>");
+                        // $('#messages').prepend("<li class=bold" + colorHTML + ">" + x + "</li>");
+                        $('#messages').prepend("<li class=bold>" + timestamp
+                            + "<span" + colorHTML + ">" + username + "</span>"
+                            + slicedMessage + "</li>");
                     } else {
-                        $('#messages').prepend($('<li>').text(x));
                         //$('#messages').prepend("<li" + colorHTML + ">" + x + "</li>");
+                        $('#messages').prepend("<li>" + timestamp
+                            + "<span" + colorHTML + ">" + username + "</span>"
+                            + slicedMessage + "</li>");
                     }
                 }
             });
@@ -78,10 +88,19 @@
 </head>
 
 <body>
-    <div id="gridContainer">
+    <div id="flexContainer">
+        <div id="messagesDiv">
+            <div class="messagesDivClass" id=messagesContainer>
+                <ul id="messages"></ul>
+            </div>
+            <form class="messagesDivClass" action="">
+                <input id="m" autocomplete="off" /><button>Send</button>
+            </form>
+        </div>
+
         <div id="metaInfo">
             <div>
-                <p>Your Assigned Username</p>
+                <h2>Your Assigned Username</h2>
             </div>
             <div>
                 <p id="usernameClass">
@@ -89,21 +108,15 @@
                     <!-- <span id="usernameClass">No Username</span> -->
                 </p>
             </div>
-            <div>Current Users:
+            <div>
+                <h2>Users:</h2>
                 <ul id="currentUsers"> no users?</ul>
             </div>
-            <div>Current Colors:
+            <div>
+                <h2>Current Colors:</h2>
                 <!-- <dl id="currentColors"> No colors</dl> -->
                 <p id="currentColors"> No colors</p>
             </div>
-        </div>
-
-        <div id="messagesDiv">
-            <ul id="messages"></ul>
-
-            <form action="">
-                <input id="m" autocomplete="off" /><button>Send</button>
-            </form>
         </div>
     </div>
 </body>
