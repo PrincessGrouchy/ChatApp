@@ -42,10 +42,10 @@ io.on('connection', (socket) => {
 
     socket.on('chat message', (msg) => {
         //console.log('message received: ' + msg);
-        var receivedMessage = new Date().toUTCString() + " | " + sessionUsername + ": " + msg;
+        var messageToWrite = new Date().toUTCString() + " | " + sessionUsername + ": " + msg;
         var systemMessage;
-        //rename
-        if (msg.startsWith("/name")) {
+
+        if (msg.startsWith("/name")) { //rename
             var requestedName = msg.replace("/name", "");
             console.log('name request:' + requestedName);
             //var systemMessage = "";
@@ -79,10 +79,7 @@ io.on('connection', (socket) => {
             }
             //chatHistory.push(new Date().toUTCString() + systemMessage);
             //io.emit('chat history', systemMessage);
-        }
-
-        //color
-        if (msg.startsWith("/color")) {
+        } else if (msg.startsWith("/color")) { //colour command
             var requestedColor = msg.replace("/color", "");
             console.log('color request:' + requestedColor);
             var systemMessage = "";
@@ -99,11 +96,21 @@ io.on('connection', (socket) => {
                 io.emit('userColors', userColors);
             }
             //chatHistory.push(new Date().toUTCString() + systemMessage);
+        } else if (msg.startsWith("/")) { //invalid command
+            systemMessage = " | System: Command rejected. Only /color and /name are valid commands.";
         }
 
-        //console.log("final message emitted:" + newMessage);
+        //emojis
+        if (msg.includes(":")) {
+            // console.log("found possible emoji");
+            messageToWrite = messageToWrite.replace(":)", "😁"); // \ud83d\ude03 ?
+            messageToWrite = messageToWrite.replace(":(", "🙁");
+            messageToWrite = messageToWrite.replace(":o", "😲");
+        }
+
+        console.log("final message emitted:" + messageToWrite);
         //io.emit('chat message', newMessage);
-        chatHistory.push(receivedMessage);
+        chatHistory.push(messageToWrite);
         if (systemMessage) {
             chatHistory.push(new Date().toUTCString() + systemMessage);
         }
