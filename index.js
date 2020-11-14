@@ -18,15 +18,27 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-    //set initial username
-    var sessionUsername = usernames[Math.floor(Math.random() * usernames.length)];
-    while (inUseUsernames.includes(sessionUsername)) {
-        if (inUseUsernames.length >= usernames.length) {
-            sessionUsername += "oh no";
-            break;
-        }
-        sessionUsername = usernames[Math.floor(Math.random() * usernames.length)];
+    var sessionUsername = "";
+    //find cookie?
+    var cookie = socket.handshake.headers['cookie'];
+    if (cookie) {
+        sessionUsername = cookie.split('; ')
+            .find(row => row.startsWith('cookieUsername'))
+            .split('=')[1];
     }
+    //console.log("sessionUsername:" + sessionUsername);
+    if (!sessionUsername) { //if couldn't find cookie 
+       //generate random initial username if no cookie
+        sessionUsername = usernames[Math.floor(Math.random() * usernames.length)];
+        while (inUseUsernames.includes(sessionUsername)) {
+            if (inUseUsernames.length >= usernames.length) {
+                sessionUsername += "oh no";
+                break;
+            }
+            sessionUsername = usernames[Math.floor(Math.random() * usernames.length)];
+        }
+    }
+
     inUseUsernames.push(sessionUsername);
     socket.emit('username', sessionUsername);
 
@@ -45,8 +57,8 @@ io.on('connection', (socket) => {
         var messageToWrite = new Date().toUTCString() + " | " + sessionUsername + ": " + msg;
         var systemMessage;
 
-        if (msg.startsWith("/name")) { //rename
-            var requestedName = msg.replace("/name", "");
+        if (msg.startsWith("/name ")) { //rename
+            var requestedName = msg.replace("/name ", "");
             console.log('name request:' + requestedName);
             //var systemMessage = "";
 
@@ -79,19 +91,20 @@ io.on('connection', (socket) => {
             }
             //chatHistory.push(new Date().toUTCString() + systemMessage);
             //io.emit('chat history', systemMessage);
-        } else if (msg.startsWith("/color")) { //colour command
-            var requestedColor = msg.replace("/color", "");
+        } else if (msg.startsWith("/color ")) { //colour command
+            var requestedColor = msg.replace("/color ", "");
             console.log('color request:' + requestedColor);
             var systemMessage = "";
-            if (requestedColor > 255255255 || requestedColor < 0) {
-                systemMessage = " | System: Command rejected. Requested color out of range.";
+            if (requestedColor >= 255255255 || requestedColor <= 0 || !Number.isInteger(parseInt(requestedColor))) {
+                systemMessage = " | System: Command rejected. Requested color out of range/not a number.";
+                //why isn't nan working
             } else {
                 systemMessage = " | System: Command accepted. Message color changed.";
                 const colorIndex = userColors.indexOf(sessionUsername); //TODO: matcher for first?
                 if (colorIndex > -1) {
                     userColors.splice(colorIndex, 1);
                 }
-                var newColorObject = { colorName: sessionUsername, color: requestedColor };
+                var newColorObject = { colorName: sessionUsername, color: parseInt(requestedColor) };
                 userColors.push(newColorObject);
                 io.emit('userColors', userColors);
             }
