@@ -3,9 +3,10 @@ var express = require('express');
 var app = express();
 var http = require('http').createServer(app);
 var io = require('socket.io')(http);
-var usernames = ['Alice', 'Bob', 'Charlie', 'Dinah', 'Eve'];
-var used_usernames = [];
+var usernames = ['Alice', 'Bob', 'Charlie', 'Dinah', 'Eve', 'Fred', 'George'];
+var inUseUsernames = [];
 var chatHistory = [];
+var userColors = [];
 // var today = new Date();
 
 //css?
@@ -18,75 +19,113 @@ app.get('/', (req, res) => {
 
 io.on('connection', (socket) => {
     //set initial username
-    var randUsername = usernames[Math.floor(Math.random() * usernames.length)];
-    while (used_usernames.includes(randUsername)) {
-        if (used_usernames.length >= usernames.length) {
-            randUsername += "oh no";
+    var sessionUsername = usernames[Math.floor(Math.random() * usernames.length)];
+    while (inUseUsernames.includes(sessionUsername)) {
+        if (inUseUsernames.length >= usernames.length) {
+            sessionUsername += "oh no";
             break;
         }
-        randUsername = usernames[Math.floor(Math.random() * usernames.length)];
+        sessionUsername = usernames[Math.floor(Math.random() * usernames.length)];
     }
-    used_usernames.push(randUsername);
-    socket.emit('username', randUsername);
+    inUseUsernames.push(sessionUsername);
+    socket.emit('username', sessionUsername);
 
     //initial connect message
-    var connectMessage = new Date().toUTCString() + ' | User connected: ' + randUsername;
+    var connectMessage = new Date().toUTCString() + ' | System: User connected: ' + sessionUsername;
     console.log(connectMessage);
-    io.emit('chat message', connectMessage);
+    //io.emit('chat message', connectMessage);
+    io.emit('users', inUseUsernames);
     chatHistory.push(connectMessage);
-    io.emit('users', used_usernames);
+    io.emit('chat history', chatHistory);
+    io.emit('userColors', userColors);
 
 
     socket.on('chat message', (msg) => {
-        console.log('message received: ' + msg);
-        var newMessage = new Date().toUTCString() + " | " + randUsername + ": " + msg;
-
+        //console.log('message received: ' + msg);
+        var receivedMessage = new Date().toUTCString() + " | " + sessionUsername + ": " + msg;
+        var systemMessage;
+        //rename
         if (msg.startsWith("/name")) {
-            var newName = msg.replace("/name", "");
-            console.log('name request:' + newName);
+            var requestedName = msg.replace("/name", "");
+            console.log('name request:' + requestedName);
+            //var systemMessage = "";
 
             //checking if exists
-            var newIndex = used_usernames.indexOf(newName);
-            var oldIndex = used_usernames.indexOf(randUsername);
+            var newIndex = inUseUsernames.indexOf(requestedName);
+            var oldIndex = inUseUsernames.indexOf(sessionUsername);
             if (newIndex > -1) { //new username exists
-                var rejectString = " | Username exists. Command rejected";
-                newMessage = newMessage.concat(rejectString);
-                console.log(rejectString);
+                systemMessage = " | System: Command rejected. Username exists.";
+                //newMessage = newMessage.concat(rejectString);
+                //console.log(rejectString);
                 //used_usernames.splice(index, 1);
-            } else if (oldIndex > -1) {
-                used_usernames.splice(oldIndex, 1);
-                used_usernames.push(newName);
-                randUsername = newName;
-                var acceptString = " | Command accepted. Username has been changed.";
-                newMessage = newMessage.concat(acceptString);
-                io.emit('users', used_usernames);
+            } else if (oldIndex > -1) {//remove old username, push new one.
+                //change connected users
+                inUseUsernames.splice(oldIndex, 1);
+                inUseUsernames.push(requestedName);
+                io.emit('users', inUseUsernames);
+
+                //change session's username
+                sessionUsername = requestedName;
+                socket.emit('username', sessionUsername);
+
+                //newMessage = newMessage.concat(acceptString);
+                systemMessage = " | System: Command accepted. Username has been changed.";
+
                 //console.log(acceptString);
             } else {
-                var weirdRejectString = " | current username doesn't exist? Command rejected";
-                newMessage = newMessage.concat(weirdRejectString);
-                console.log(weirdRejectString);
-
+                systemMessage = " | System: Command rejected. Current username doesn't exist? ";
+                //newMessage = newMessage.concat(weirdRejectString);
+                //console.log(weirdRejectString);
             }
-
+            //chatHistory.push(new Date().toUTCString() + systemMessage);
+            //io.emit('chat history', systemMessage);
         }
-        console.log("final message emitted:" + newMessage);
-        io.emit('chat message', newMessage);
-        chatHistory.push(newMessage);
+
+        //color
+        if (msg.startsWith("/color")) {
+            var requestedColor = msg.replace("/color", "");
+            console.log('color request:' + requestedColor);
+            var systemMessage = "";
+            if (requestedColor > 255255255 || requestedColor < 0) {
+                systemMessage = " | System: Command rejected. Requested color out of range.";
+            } else {
+                systemMessage = " | System: Command accepted. Message color changed.";
+                const colorIndex = userColors.indexOf(sessionUsername); //TODO: matcher for first?
+                if (colorIndex > -1) {
+                    userColors.splice(colorIndex, 1);
+                }
+                var newColorObject = { colorName: sessionUsername, color: requestedColor };
+                userColors.push(newColorObject);
+                io.emit('userColors', userColors);
+            }
+            //chatHistory.push(new Date().toUTCString() + systemMessage);
+        }
+
+        //console.log("final message emitted:" + newMessage);
+        //io.emit('chat message', newMessage);
+        chatHistory.push(receivedMessage);
+        if (systemMessage) {
+            chatHistory.push(new Date().toUTCString() + systemMessage);
+        }
+        io.emit('chat history', chatHistory);
     });
 
     socket.on('disconnect', () => {
-        console.log('user disconnected:' + randUsername);
-        var newMessage = new Date().toUTCString() + ' | user disconnected: ' + randUsername;
-        io.emit('chat message', newMessage);
-        chatHistory.push(newMessage);
+        console.log('user disconnected:' + sessionUsername);
+        var disconnectMessage = new Date().toUTCString() + ' | System:  User disconnected: ' + sessionUsername;
+        //io.emit('chat message', newMessage);
+        chatHistory.push(disconnectMessage);
+        io.emit('chat history', chatHistory);
 
+        //removing user from active users
         //will be cookies, eventually
-        const index = used_usernames.indexOf(randUsername);
+        const index = inUseUsernames.indexOf(sessionUsername);
         if (index > -1) {
-            used_usernames.splice(index, 1);
+            inUseUsernames.splice(index, 1);
         }
-        console.log('remaining users:' + used_usernames)
-        io.emit('users', used_usernames);
+        // console.log('remaining users:' + used_usernames)
+        io.emit('users', inUseUsernames);
+        //todo remove colours too?
     });
 });
 
